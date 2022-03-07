@@ -21,8 +21,9 @@ module Chronicle
       end
 
       def extract
-        @history.each do |link|
-          yield Chronicle::ETL::Extraction.new(data: link, meta: { icloud_account: @icloud_account } )
+        @history.each do |entry|
+          entry.transform_keys!(&:to_sym)
+          yield Chronicle::ETL::Extraction.new(data: entry, meta: { icloud_account: @icloud_account } )
         end
       end
 

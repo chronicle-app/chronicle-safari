@@ -2,6 +2,7 @@
 
 require_relative "safari/version"
 require_relative "safari/safari_extractor"
+require_relative "safari/safari_transformer"
 
 module Chronicle
   module Safari
