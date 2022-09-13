@@ -46,7 +46,7 @@ module Chronicle
 
       def build_actor
         record = ::Chronicle::ETL::Models::Entity.new({
-          represent: 'identity',
+          represents: 'identity',
           provider: 'icloud',
           provider_id: @extraction.meta[:icloud_account][:dsid],
           title: @extraction.meta[:icloud_account][:display_name],
