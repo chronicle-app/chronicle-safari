@@ -2,10 +2,12 @@ require 'chronicle/etl'
 require 'sqlite3'
 
 module Chronicle
-  module Safari 
-    class SafariExtractor < Chronicle::ETL::Extractor
+  module Safari
+    class BrowseExtractor < Chronicle::ETL::Extractor
       register_connector do |r|
-        r.provider = 'safari'
+        r.source = :safari
+        r.type = :browse
+        r.strategy = :local_db
         r.description = 'browser history'
       end
 
@@ -23,7 +25,10 @@ module Chronicle
       def extract
         @history.each do |entry|
           entry.transform_keys!(&:to_sym)
-          yield Chronicle::ETL::Extraction.new(data: entry, meta: { icloud_account: @icloud_account } )
+
+          meta = {}
+          meta[:my_icloud_account] = @icloud_account
+          yield build_extraction(data: entry, meta:)
         end
       end
 
@@ -50,22 +55,22 @@ module Chronicle
 
       def load_history
         conditions = []
-        conditions << "history_visits.redirect_destination IS NULL"
+        conditions << 'history_visits.redirect_destination IS NULL'
         conditions << "visit_time_utc > '#{@config.since.utc}'" if @config.since
         conditions << "visit_time_utc < '#{@config.until.utc}'" if @config.until
 
         sql = <<~SQL
           SELECT
               *,
-              datetime(visit_time + 978307200, 'unixepoch') as visit_time_utc           
+              datetime(visit_time + 978307200, 'unixepoch') as visit_time_utc
           FROM
-              history_visits             
+              history_visits
           LEFT JOIN
-              history_items             
-                  ON history_items.id = history_item 
+              history_items
+                  ON history_items.id = history_item
         SQL
-        sql += " WHERE #{conditions.join(" AND ")}" if conditions.any?
-        sql += " ORDER BY visit_time_utc DESC"
+        sql += " WHERE #{conditions.join(' AND ')}" if conditions.any?
+        sql += ' ORDER BY visit_time_utc DESC'
         sql += " LIMIT #{@config.limit}" if @config.limit
 
         results = @db.execute(sql)
